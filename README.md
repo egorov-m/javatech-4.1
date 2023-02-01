@@ -153,3 +153,85 @@ ssh-copy-id -i ./.ssh/id_rsa.pub -p 2222 username@127.0.0.1
 ```sh
 ssh -p 2222 username@127.0.0.1
 ```
+
+### 7. Установка JDK.
+**Java** — это язык программирования и вычислительная платформа, впервые выпущенная компанией Sun Microsystems в 1995 году.
+
+**JVM** — это абстрактная машина, отвечающая за компиляцию и выполнение кода Java. Это часть среды выполнения Java (JRE), которая вызывает основную функцию программы. Поставляется с компилятором JIT (Just-in-Time), который преобразует исходный код Java в машинный код. 
+
+**JRE** — это программное обеспечение, включающее JVM и библиотеки классов для независимого запуска Java-программ. Хотя он может выполнять код. Тем не менее, JRE поставляется в комплекте с Java Development Kit (JDK), чтобы обеспечить полный опыт разработки приложений. 
+
+**JDK** — это полная программная среда для создания приложений и апплетов с использованием языка программирования Java. Это зависит от платформы. Поэтому он имеет разные версии платформы ОС для Windows, Linux, Mac и т.д. Он позволяет читать, писать и выполнять программу Java. 
+
+#### Установка с помощью пакетного менеджера apt.
+:heavy_exclamation_mark: Обратите внимание, что версия в репозиториях Ubuntu или другой операционной системы могут не совпадать с версиями официальных репозиториев JDK.
+
+Примеры команд для установки:
+```sh
+sudo apt-get install default-jdk # установить последнюю версию Open JDK
+sudo apt-get install default-jre # установить последнюю версию Open JRE
+sudo apt-get install default-jdk-doc # установить последнюю версию пакета документации
+
+sudo add-apt-repository ppa:webupd8team/java # добавление репозитория от проекта webupd8.org
+sudo apt-get update # обновляет индексы пакетов в системе Linux и списки пакетов (/etc/apt/sources.list)
+sudo apt-get install oracle-java8-installer # установить java с сайта Oracle
+```
+#### Ручная установка Open JDK.
+
+Перейдите на сайт https://openjdk.org/projects/jdk/ и выберите подходящую версию JDK под вашу операционную систему.
+
+Я выбрал: [JDK 19](https://jdk.java.net/19/); [Linux / x64](https://download.java.net/java/GA/jdk19.0.2/fdb695a9d9064ad6b064dc6df578380c/7/GPL/openjdk-19.0.2_linux-x64_bin.tar.gz); [sha256](https://download.java.net/java/GA/jdk19.0.2/fdb695a9d9064ad6b064dc6df578380c/7/GPL/openjdk-19.0.2_linux-x64_bin.tar.gz);
+
+##### Загрузка архива на сервер
+Выполните команду
+```sh
+wget https://download.java.net/java/GA/... .tar.gz
+```
+
+##### Проверка подлинности
+Выполните команду и сверьте с тем, что находится в [sha256](https://download.java.net/java/GA/jdk19.0.2/fdb695a9d9064ad6b064dc6df578380c/7/GPL/openjdk-19.0.2_linux-x64_bin.tar.gz).
+```sh
+sha256sum file.tar.gz
+```
+##### Распаковка архива
+Выполните команды.
+```sh
+sudo mkdir /usr/lib/jvm # если папка отсутствует
+sudo tar -xvf file.tar.gz -C /usr/lib/jvm
+```
+x — извлечь файлы из заархивированного файла;
+v — перечислить файлы, которые извлекает;
+f — указать файл с которым работать;
+```sh
+tar –tzf file.tar.gz # просмотр содержимого архива
+```
+
+##### Постоянное изменения переменных окружения `$PATH`, `$JAVA_HOME`, `$JRE_HOME`, `$JDK_HOME`.
+
+Просмотр содержимого переменных
+```sh
+echo $PATH
+echo $JAVA_HOME
+echo $JRE_HOME
+echo $JDK_HOME
+```
+
+Изменение переменной для текущей сессии.
+```sh
+export PATH=$PATH:/path/to/my/program
+```
+
+Для постоянного эффекта нужно отредактировать файл `~/.profile` добавив, например:
+```sh
+# set Java variables
+if [ -d "/usr/lib/jvm/jdk-19.0.2" ] ; then
+    JAVA_HOME="/usr/lib/jvm/jdk-19.0.2"
+    JRE_HOME="$JAVA_HOME"
+    JDK_HOME="$JAVA_HOME"
+fi
+
+# set PATH jdk
+if [ -d "/usr/lib/jvm/jdk-19.0.2/bin" ] ; then
+    PATH="$JAVA_HOME/bin:$PATH"
+fi
+```
