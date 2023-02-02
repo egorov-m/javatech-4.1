@@ -274,3 +274,117 @@ nohup java -jar ./module-2/demo-web-0.0.1-SNAPSHOT.jar >> ./module-2/log &
 ```sh
 ps af
 ```
+
+### 10. Работа с Tomcat на сервере.
+В целях безопасности Tomcat не следует запускать под пользователем root. Создаём нового системного пользователя и группу с домашним каталогом `/opt/tomcat`, который будет запускать службу Tomcat.
+```sh
+sudo useradd -r -m -U -d /opt/tomcat -s /bin/false tomcat
+```
+
+#### Установка Tomcat
+Загрузите подходящую вам версию с сайта: https://downloads.apache.org/tomcat. Команда имеет вид:
+```sh
+wget https://downloads.apache.org/tomcat/tomcat-9/v9.0.71/bin/apache-tomcat-9.0.71.tar.gz -P /tmp
+```
+-P /tmp — указываем директорию загрузки;
+
+Выполним проверку на подлинность командой:
+```sh
+sha512sum /tmp/apache-tomcat-9.0.71.tar.gz # сопоставить с тем, что находится по адресу: https://downloads.apache.org/tomcat/tomcat-9/v9.0.71/bin/apache-tomcat-9.0.71.tar.gz.sha512
+```
+
+Распаковка архива в каталог `/opt/tomcat`:
+```sh
+sudo tar -xvf /tmp/apache-tomcat-9*.tar.gz -C /opt/tomcat
+```
+Создание символической ссылки для лучшего контроля версий:
+```sh
+sudo ln -s /opt/tomcat/apache-tomcat-9.0.71 /opt/tomcat/latest
+```
+Изменение владельца каталога пользователю и группе tomcat:
+```sh
+sudo chown -RH tomcat: /opt/tomcat/latest
+```
+Скрипты внутри bin каталога помечаем флагом, как исполняемые:
+```sh
+sudo sh -c 'chmod +x /opt/tomcat/latest/bin/*.sh'
+```
+
+#### Запуск Tomcat как службу
+Чтобы запустить Tomcat как службу, вам нужно создать новый модульный файл. Создаём файл `tomcat.service` в каталоге `/etc/systemd/system/`.
+```sh
+sudo touch /etc/systemd/system/tomcat.service
+```
+Прописываем конфигурацию. Пример:
+```sh
+[Unit]
+Description=Tomcat 9 servlet container
+After=network.target
+
+[Service]
+Type=forking
+
+User=tomcat
+Group=tomcat
+
+Environment="JAVA_HOME=/usr/lib/jvm/jdk-19.0.2"
+Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom -Djava.awt.headless=true"
+
+Environment="CATALINA_BASE=/opt/tomcat/latest"
+Environment="CATALINA_HOME=/opt/tomcat/latest"
+Environment="CATALINA_PID=/opt/tomcat/latest/temp/tomcat.pid"
+Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+
+ExecStart=/opt/tomcat/latest/bin/startup.sh
+ExecStop=/opt/tomcat/latest/bin/shutdown.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+Сообщение systemd о том, что была создана новая служба:
+```sh
+sudo systemctl daemon-reload
+```
+Запуск службы Tomcat:
+```sh
+sudo systemctl start tomcat
+```
+Проверка статуса службы:
+```sh
+sudo systemctl status tomcat
+```
+Включение авто запуска во время загрузки:
+```sh
+sudo systemctl enable tomcat
+```
+Разрешение движений через порт:
+```sh
+sudo ufw allow 8080/tcp
+```
+
+**!!!** Если вы в VirtualBox используйте проброс портов, не забудьте прописать проброс для порта 8080.
+
+#### Настройка веб-интерфейса управления Tomcat
+Пользователи и роли Tomcat определяются в tomcat-users.xml файл. Этот файл представляет собой шаблон с комментариями и примерами, описывающими, как настроить пользователя или роль.
+
+Создание файла:
+```sh
+sudo touch /opt/tomcat/latest/conf/tomcat-users.xml
+```
+Прописываем конфигурацию:
+```sh
+<tomcat-users>
+   <role rolename="admin-gui"/>
+   <role rolename="manager-gui"/>
+   <user username="admin" password="admin_password" roles="admin-gui,manager-gui"/>
+</tomcat-users>
+```
+
+Для настройки доступа редактируйте файл: `/opt/tomcat/latest/webapps/manager/META-INF/context.xml`.
+
+Перезапуск службы tomcat:
+```sh
+sudo systemctl restart tomcat
+```
+
+**Деплой war файла можно произвести, например, через веб интерфейс.**
