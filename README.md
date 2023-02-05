@@ -589,7 +589,7 @@ server {
                 proxy_pass http://127.0.0.1:8080/demo-web-1.0-SNAPSHOT/files;
         }
 
-        location /spring {
+        location /spring/ {
                 proxy_pass http://127.0.0.1:8000/;
         }
 }
